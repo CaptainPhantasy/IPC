@@ -12,10 +12,10 @@ interface WaveformVisualizerProps {
 
 export function WaveformVisualizer({ trackRef, state, className }: WaveformVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
-  const audioContextRef = useRef<AudioContext>();
-  const analyserRef = useRef<AnalyserNode>();
-  const dataArrayRef = useRef<Uint8Array>();
+  const animationRef = useRef<number | undefined>(undefined);
+  const audioContextRef = useRef<AudioContext | undefined>(undefined);
+  const analyserRef = useRef<AnalyserNode | undefined>(undefined);
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | undefined>(undefined);
   const [audioLevels, setAudioLevels] = useState<number[]>([0, 0, 0]);
 
   // Set up real audio analysis from the track

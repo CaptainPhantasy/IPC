@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, type Variants } from 'motion/react';
 
 // Safe localStorage management
 const safeLocalStorage = {
@@ -50,25 +50,32 @@ import { ScrollArea } from '../livekit/scroll-area/scroll-area';
 const MotionBottom = motion.create('div');
 
 const IN_DEVELOPMENT = process.env.NODE_ENV !== 'production';
+
+const BOTTOM_VIEW_VARIANTS: Variants = {
+  visible: {
+    opacity: 1,
+    translateY: '0%',
+    transition: {
+      duration: 0.3,
+      delay: 0.5,
+      ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number],
+    },
+  },
+  hidden: {
+    opacity: 0,
+    translateY: '100%',
+    transition: {
+      duration: 0.3,
+      ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number],
+    },
+  },
+};
+
 const BOTTOM_VIEW_MOTION_PROPS = {
-  variants: {
-    visible: {
-      opacity: 1,
-      translateY: '0%',
-    },
-    hidden: {
-      opacity: 0,
-      translateY: '100%',
-    },
-  },
-  initial: 'hidden',
-  animate: 'visible',
-  exit: 'hidden',
-  transition: {
-    duration: 0.3,
-    delay: 0.5,
-    ease: [0, 0, 0.2, 1],
-  },
+  variants: BOTTOM_VIEW_VARIANTS,
+  initial: 'hidden' as const,
+  animate: 'visible' as const,
+  exit: 'hidden' as const,
 };
 
 interface FadeProps {

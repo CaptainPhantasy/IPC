@@ -1,26 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, type Variants } from 'motion/react';
 import { PaperPlaneRightIcon, SpinnerIcon } from '@phosphor-icons/react/dist/ssr';
 import { Button } from '@/components/livekit/button';
 
+const MOTION_VARIANTS: Variants = {
+  hidden: {
+    height: 0,
+    opacity: 0,
+    marginBottom: 0,
+    transition: {
+      duration: 0.3,
+      ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number],
+    },
+  },
+  visible: {
+    height: 'auto',
+    opacity: 1,
+    marginBottom: 12,
+    transition: {
+      duration: 0.3,
+      ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number],
+    },
+  },
+};
+
 const MOTION_PROPS = {
-  variants: {
-    hidden: {
-      height: 0,
-      opacity: 0,
-      marginBottom: 0,
-    },
-    visible: {
-      height: 'auto',
-      opacity: 1,
-      marginBottom: 12,
-    },
-  },
-  initial: 'hidden',
-  transition: {
-    duration: 0.3,
-    ease: [0, 0, 0.2, 1],
-  },
+  variants: MOTION_VARIANTS,
+  initial: 'hidden' as const,
 };
 
 interface ChatInputProps {
