@@ -55,9 +55,10 @@ export function TrackSelector({
           >
             <span
               className={cn([
-                'h-full w-0.5 origin-center rounded-2xl',
+                'h-full w-0.5 origin-center rounded-2xl transition-colors',
                 'group-data-[state=on]/track:bg-foreground group-data-[state=off]/track:bg-destructive',
                 'data-lk-muted:bg-muted',
+                'data-[lk-highlighted]:bg-green-500 data-[lk-highlighted]:scale-y-125',
               ])}
             />
           </BarVisualizer>
