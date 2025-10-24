@@ -10,9 +10,9 @@ export interface AppConfig {
 
   logo: string;
   startButtonText: string;
-  accent?: string;
-  logoDark?: string;
-  accentDark?: string;
+  accent: string;
+  logoDark: string;
+  accentDark: string;
 
   // for LiveKit Cloud Sandbox
   sandboxId?: string;
