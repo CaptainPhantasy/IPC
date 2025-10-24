@@ -2,30 +2,18 @@ import logging
 
 from dotenv import load_dotenv
 from livekit.agents import (
-    Agent,
-    AgentSession,
     JobContext,
-    JobProcess,
-    MetricsCollectedEvent,
-    RoomInputOptions,
     WorkerOptions,
     cli,
-    metrics,
 )
 from livekit.plugins.openai import realtime
-from livekit.plugins import google, noise_cancellation, openai, silero
-from google.cloud import texttospeech
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logger = logging.getLogger("ace-agent")
 
 load_dotenv(".env.local")
 
-
-class AceAssistant(Agent):
-    def __init__(self) -> None:
-        super().__init__(
-            instructions="""You are Ace, the enthusiastic voice assistant for Indianapolis Pickleball Club (IPC). You embody founder Chris Sears' passion for making pickleball accessible to everyone. Like Chris, you're a converted tennis player who discovered that pickleball's magic isn't just the game - it's the community. You speak with authentic Midwest warmth, practical directness, and contagious enthusiasm.
+# Instructions for Ace
+ACE_INSTRUCTIONS = """You are Ace, the enthusiastic voice assistant for Indianapolis Pickleball Club (IPC). You embody founder Chris Sears' passion for making pickleball accessible to everyone. Like Chris, you're a converted tennis player who discovered that pickleball's magic isn't just the game - it's the community. You speak with authentic Midwest warmth, practical directness, and contagious enthusiasm.
 
 ## CORE IDENTITY
 
@@ -173,83 +161,38 @@ Always end enthusiastically with clear next steps:
 - Tone: Welcoming, informative, supportive, professional
 - Be conversational and natural - like talking to a knowledgeable club member
 
-Remember: You ARE Ace. You embody Chris's passion, knowledge, and commitment to making IPC the best pickleball community in Indianapolis. Be enthusiastic, helpful, proactive, and always leave them excited to visit!""",
-        )
+Remember: You ARE Ace. You embody Chris's passion, knowledge, and commitment to making IPC the best pickleball community in Indianapolis. Be enthusiastic, helpful, proactive, and always leave them excited to visit!"""
 
 
-def prewarm(proc: JobProcess):
-    """Prewarm VAD model before agent starts"""
-    proc.userdata["vad"] = silero.VAD.load()
-
-
-async def entrypoint(ctx: JobContext):
+async def entrypoint(context: JobContext) -> None:
     """Main entrypoint for the Ace agent"""
-    # Logging setup
-    ctx.log_context_fields = {
-        "room": ctx.room.name,
-    }
+    logger.info(f"Starting Ace agent for room: {context.room.name}")
 
-    logger.info("=== Starting ACE with Google Chirp 3 HD Voice (Orus) ===")
+    # Connect to the room
+    await context.connect()
+    logger.info("Connected to LiveKit room")
 
-    # Create session with proven voice pipeline: Google STT + OpenAI LLM + Google TTS
-    # This matches SAGE's architecture which uses superior Google Chirp 3 HD voices
-    session = AgentSession(
-        # Google Speech-to-Text
-        stt=google.STT(
-            languages=["en-US"],
-        ),
-        # OpenAI GPT-4o-mini for conversation
-        llm=openai.LLM(model="gpt-4o-mini"),
-        # Google Text-to-Speech with Chirp 3 HD voice (male voice for ACE)
-        tts=google.TTS(
-            voice_name="en-US-Chirp3-HD-Orus",  # Male Chirp 3 HD voice - Orus
-            audio_encoding=texttospeech.AudioEncoding.LINEAR16,  # LINEAR16 encoding (required for Chirp 3 HD)
-            sample_rate=44100,    # 44100Hz sample rate for high quality audio
-            # Other Chirp 3 HD voices:
-            # "en-US-Chirp3-HD-Laomedeia" - Female (same as SAGE)
-            # "en-US-Chirp3-HD-Zephyr" - Female
-            # "en-US-Chirp3-HD-Aoede" - Female
-        ),
-        # VAD - Silero
-        vad=ctx.proc.userdata["vad"],
-        # Turn detection enabled
-        turn_detection=MultilingualModel(),
-    )
-
-    logger.info("✅ Session configured: Google STT → GPT-4o-mini → Chirp3-HD-Orus TTS (LINEAR16 44100Hz)")
-
-    # Metrics collection
-    usage_collector = metrics.UsageCollector()
-
-    @session.on("metrics_collected")
-    def _on_metrics_collected(ev: MetricsCollectedEvent):
-        metrics.log_metrics(ev.metrics)
-        usage_collector.collect(ev.metrics)
-
-    async def log_usage():
-        summary = usage_collector.get_summary()
-        logger.info(f"Usage: {summary}")
-
-    ctx.add_shutdown_callback(log_usage)
-
-    # Start the session
-    await session.start(
-        agent=AceAssistant(),
-        room=ctx.room,
-        room_input_options=RoomInputOptions(
-            # Noise cancellation enabled
-            noise_cancellation=noise_cancellation.BVC(),
+    # Create the OpenAI Realtime assistant
+    assistant = realtime.RealtimeAgent(
+        instructions=ACE_INSTRUCTIONS,
+        voice="nova",
+        turn_detection=realtime.TurnDetection(
+            type="server_vad",
+            threshold=0.5,
+            prefix_padding_ms=300,
+            silence_duration_ms=500,
         ),
     )
 
-    # Join the room and connect to the user
-    await ctx.connect()
+    # Start the assistant
+    assistant.start(context.room)
+    logger.info("Ace assistant started successfully")
 
 
 if __name__ == "__main__":
     cli.run_app(
         WorkerOptions(
             entrypoint_fnc=entrypoint,
-            prewarm_fnc=prewarm,
+            prewarm_fnc=None,
         )
     )
